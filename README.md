@@ -1,190 +1,99 @@
-<img style="width: 128px; height: 128px" src="website/static/logo.svg" /><h1 style="font-size: 48px"><a href="https://twoblade.com">Twoblade.com</a> - an email protocol & client</h1>
-[Privacy Policy](https://twoblade.com/legal/privacy) | [Terms of Service](https://twoblade.com/legal/terms) | [License](LICENSE) | [YouTube video](https://youtu.be/nALc9GwZdFc)
+# RAMP — Rust Address Messaging Protocol
 
-**Twoblade.com** is an interface for **SHARP** (**S**elf-**H**osted **A**ddress **R**outing **P**rotocol) - a decentralized email system that uses the `#` symbol for addressing (e.g., `user#domain.com`).
+>RAMP (**R**ust **A**ddress **M**essaging **P**rotocol) — >это self-hosted децентрализованный протокол обмена >сообщениями (электронной почтой нового поколения), >полностью написанный на Rust.
+>
+>>Inspired by SHARP, but reimplemented from scratch in Rust.
 
-## SHARP
+Безопасная авторизация на BLAKE3, никакого JWT.
 
-*   SHARP uses addresses in the format `user#domain.com`.
-*   `user` is the username of the recipient.
-*   `domain.com` is the domain name of the SHARP server.
+Упор на простоту, надёжность и независимость.
 
-SHARP's HTML allows for reactive styling:
-```html
-<!-- Theme-aware styling -->
-<div style="background: {$LIGHT ? '#ffffff' : '#1a1a1a'}">
-<p style="color: {$DARK ? '#ffffff' : '#000000'}">Content</p>
+## Кратко о RAMP
 
-<!-- Complex conditional styling -->
-<div style="
-  background: {$DARK ? '#2d2d2d' : '#f0f0f0'};
-  border: {$DARK ? '1px solid #404040' : '1px solid #ddd'};
-  box-shadow: {$DARK ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.1)'};
-">
+- Использует адреса вида: user#domain.com
 
-<!-- Available operators: $DARK, $LIGHT -->
-```
+- Не требует внешних сервисов: всё работает на вашем сервере
 
-## Running the SHARP Server
+- DNS discovery через SRV-записи (_ramp._tcp.domain.com)
 
-1.  **Navigate to the `SHARP` directory:**
-    ```bash
-    cd SHARP
-    ```
+- Все сообщения идут через TCP по простому бинарному протоколу (protobuf)
 
-2.  **Install dependencies:**
-    ```bash
-    bun install
-    ```
+- Сервера идентифицируются доменом и BLAKE3-подписанным токеном
 
-3.  **Run the initialization script:**
-    ```bash
-    bash database/init.sh
-    ```
+>Пример запуска сервера(в далеком будущем)
+>```shell
+>cd new_rs/halberd
+>cargo build --release
+>./target/release/halberd
+>```
 
-4.  **Set up environment variables:**
+- Сервер стартует на порту, заданном в конфиге (по умолчанию 5000).
 
-    *   The `init.sh` script will create a `.env` file in the `SHARP` directory.
-    *   It will prompt you for your domain name and set up the basic `.env` file.
-    *   You may need to modify the `.env` file to match your actual configuration, especially the `DATABASE_URL`.
-        ```
-        DATABASE_URL=postgres://user:password@host:port/database
-        SHARP_PORT=5000
-        HTTP_PORT=5001
-        DOMAIN_NAME=yourdomain.com
-        ```
+- DNS конфиг (Cloudflare или любой другой провайдер)
 
-5.  **Run the server:**
-    ```bash
-    cd ..
-    bun run .
-    ```
+>Добавьте SRV-запись:
+>
+>>_ramp._tcp.yourdomain.com. 86400 IN SRV 1 1 5000 ramp.yourdomain.com.
+>
+>И A-запись для ramp.yourdomain.com → ваш IP.
 
-6.  **Add SRV records to Cloudflare (or your DNS provider):**
+## Протокол
 
-    *   After setting up the SHARP server, you need to add SRV records to your domain's DNS settings so that other SHARP users can discover your server.
-    *   These records should point to your server's address and port.  The specific records depend on your configuration, but here's an example:
+Пример рукопожатия (protobuf-сообщения, см. proto/halberd.proto):
 
-        ```
-        _sharp._tcp.yourdomain.com. 86400 IN SRV 10 0 5000 yourdomain.com.
-        ```
+1. Клиент: HELLO (с доменом и версией)
 
-    *   Replace `yourdomain.com` with your actual domain name and `5000` with the port your SHARP server is running on (defined by `SHARP_PORT` in your `.env` file).
-    *   Consult your DNS provider's documentation for specific instructions on adding SRV records.  For Cloudflare, you can typically add these records in the DNS settings panel.
+2. Сервер: OK (или ERROR)
 
-## Running the Website
+3. Клиент: MAIL_TO (кому отправить)
 
-1.  **Navigate to the `website` directory:**
-    ```bash
-    cd website
-    ```
+4. Сервер: OK
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+5. Клиент: DATA → EMAIL_CONTENT → END_DATA
 
-3.  **Set up environment variables:**
+6. Сервер: OK (или ERROR)
 
-    *   Create a `.env` file in the `website` directory.
-    *   Add the following variable, replacing the values with your actual configuration:
-        ```
-        PUBLIC_DOMAIN=yourdomain.com
-        ```
+**Всё подписывается и защищается токеном с BLAKE3.**
 
-        **Additional variables:** You may also need to configure the following variables in your `.env` file:
-        ```python
-        # Database from docker-compose
-        DATABASE_URL=postgres://postgres:REPLACE_ME@localhost:5432/twoblade
-        PUBLIC_DOMAIN=yourdomain.com
-        PUBLIC_WEBSOCKET_URL=https://localhost:3001
+## Аутентификация
 
-        # The JWT secret should be long, random and similar to a password. Do not share it with anyone.
-        # Run `openssl rand -hex 64` to generate one
-        JWT_SECRET=
+Авторизация по токену (выдаётся при логине, хранится на клиенте)
 
-        # S3-compatible works too.
-        PRIVATE_B2_KEY_ID=
-        PRIVATE_B2_APP_KEY=
-        PRIVATE_B2_BUCKET=
-        PRIVATE_B2_REGION=
-        PRIVATE_B2_ENDPOINT=https://s3.<region>.backblazeb2.com
+Токен — короткая строка вида: user_id|expires|nonce|blake3sig
 
-        # A cookie from the website, optional & used in /test
-        TEST_AUTH_TOKEN=
+Нет JWT и устаревшей крипты(Sha256 и подобной)
 
-        # Comes from docker-compose
-        REDIS_URL=redis://redis:6379
+## TODO/Planned
 
-        # Cloudflare Turnstile keys, these are for testing & will validate any req. Replace with actual ones in prod.
-        PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
-        ```
+- API для фронта (WebSocket, REST)
 
-        Ensure that these URLs match the actual URLs of your API server, SHARP server, and WebSocket server.
-        
+- UI на Rust/WASM (Dioxus/Yew)
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev -- --open
-    ```
+- Интеграция с MariaDB (или SQLite)
 
-## Attachments Setup
-You will need a [Backblaze](https://www.backblaze.com/) account or any S3-compatible storage provider.
+- Расширяемые антиспам-фичи
 
-### Using Backblaze B2
-```bash
-wget https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -O "b2"
-chmod +x b2
-./b2 account authorize
+- Federation (несколько серверов на разных доменах)
 
-./b2 bucket update --cors-rules '[
-  {
-    "corsRuleName": "allowS3PutFromLocalhost",
-    "allowedOrigins": ["http://localhost:5173", "REPLACE_ME_WITH_PUBLIC_DOMAIN"],
-    "allowedOperations": [
-      "s3_put",
-      "s3_get"
-    ],
-    "allowedHeaders": ["*"],
-    "exposeHeaders": ["ETag", "x-amz-request-id"],
-    "maxAgeSeconds": 3600
-  }
-]' REPLACE_ME_WITH_BUCKET_NAME
-```
-- Note to replace `REPLACE_ME_WITH_PUBLIC_DOMAIN` and `REPLACE_ME_WITH_BUCKET_NAME`
+## Запуск тестового клиента
 
-### Using other S3-Compatible storage
-You can use any S3-compatible storage by setting these environment variables:
-```
-PRIVATE_B2_KEY_ID=<access-key>
-PRIVATE_B2_APP_KEY=<secret-key>
-PRIVATE_B2_BUCKET=<bucket-name>
-PRIVATE_B2_REGION=<region>
-PRIVATE_B2_ENDPOINT=<s3-endpoint>  # Example: https://s3.<region>.amazonaws.com for AWS
-```
+>В сборке уже есть простейший клиент (можно отправлять тестовые письма локально).
 
-Make sure to configure CORS rules on your bucket to allow uploads from your domain.
+Для реального использования потребуется завести SRV-запись и выдать себе токен.
 
-## Running the database
+## Миграция с SHARP
 
-1.  **Change the default database password:** (optional)
-    *   Open the `docker-compose.yml` file and change `REPLACE_ME` to something else.
-        ```yaml
-        version: '3.8'
+RAMP использует ту же схему адресации (user#domain), но весь код переписан на Rust для оптимизаций.
 
-        services:
-          postgres_db:
-            # ...
-            environment:
-              POSTGRES_USER: postgres
-              POSTGRES_PASSWORD: REPLACE_ME  # Replace with your desired password
-            # ...
-        ```
-    *   Update your `.env` file with the new password.
+Авторизация и структура протокола улучшены.
 
-2.  **Start the database:**
-    ```bash
-    docker compose up -d postgres
-# Other SHARP instances
-* ⭐ https://twoblade.com - the official client for SHARP.
-* https://garymail.org
+Совместимость с SHARP совершенно не гарантируется.
+
+## Лицензия
+
+MIT (как и оригинальный SHARP, полный текст в LICENSE)
+
+### **Автор: BITIW**
+>RAMP — не просто новая почта. Это новая парадигма. Ты можешь её форкнуть, улучшить, и никто не помешает тебе быть самостоятельным.
+
+>Inspired by Twoblade/SHARP, but 100% Rust-powered.
