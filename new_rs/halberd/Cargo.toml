@@ -1,0 +1,18 @@
+[package]
+name = "halberd"
+version = "0.1.0"
+edition = "2024"
+
+build = "build.rs"
+
+[dependencies]
+anyhow = "1.0.98"
+base64 = "0.22.1"
+blake3 = "1.8.2"
+prost = "0.13.5"
+rand = "0.9.1"
+time = "0.3.41"
+tokio = { version = "1.45.0", features = ["full"] }
+trust-dns-resolver = { version = "0.23.2" }
+[build-dependencies]
+prost-build = "0.13.5"

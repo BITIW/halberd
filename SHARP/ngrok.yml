@@ -1,9 +1,0 @@
-authtoken: TOKEN_HERE
-version: "2"
-tunnels:
-  sharp:
-    proto: tcp
-    addr: 5000
-  api:
-    proto: http
-    addr: 5001

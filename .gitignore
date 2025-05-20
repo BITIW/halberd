@@ -3,7 +3,7 @@ node_modules
 .vscode
 .idea
 nullmark
-
+new_rs/halberd/target/
 .DS_Store
 Thumbs.db
 desktop.ini
