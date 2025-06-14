@@ -1,29 +1,37 @@
+// proto/halberd.proto
 syntax = "proto3";
 package halberd;
 
 message Hello {
   string server_id = 1;
-  string protocol = 2;
+  string protocol  = 2;
 }
+
 message Ok {
   string protocol = 1;
-  string message = 2;
+  string message  = 2;
 }
+
 message Error {
   string message = 1;
 }
+
 message MailTo {
   string address = 1;
 }
+
 message Data {
-  // just a marker, no fields
+  // marker only
 }
+
 message EmailContent {
-  string subject = 1;
-  string body = 2;
+  string subject      = 1;
+  string body         = 2;
   string content_type = 3;
-  string html_body = 4;
+  string html_body    = 4;
+  bytes signature     = 5;  // BLAKE3-288 signature of `body`
 }
+
 message EndData {
-  // just a marker, no fields
+  // marker only
 }

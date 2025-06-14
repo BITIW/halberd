@@ -1,5 +1,6 @@
 mod ramp; // подключаем вышеописанный модуль
-mod dns; // подключаем dns... 
+mod dns; // подключаем dns...
+mod crypto;
 mod auth;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -12,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
         Some(uid) => println!("Valid token for user_id={}", uid),
         None => println!("Invalid or expired token"),
     }     
-    // ... остальной main, например запуск сервера/клиента
+    // ...
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     ramp::run_test_client("127.0.0.1:5000").await?;
     Ok(())
